@@ -26,8 +26,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ID = 'com.necrosis.energy-school'
-DEFAULT_GAME = Path('D:/SteamLibrary/steamapps/common/Exanima')
-DEFAULT_EXANIMATE = Path(r'C:\Users\hunte\Documents\ChatGPT\Exanimate\work\r20-pose-studio-codex-20261020\service')
 CELL = 512
 FLAG_MIPS = 0x00080000
 LINK_CURVE = 0.03
@@ -89,8 +87,10 @@ def reference(pwr, rfi, installed_tree: bytes, installed_sheet: bytes, nodes: li
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('--game', type=Path, default=DEFAULT_GAME)
-    parser.add_argument('--exanimate', type=Path, default=Path(os.environ.get('EXANIMATE_SERVICE', DEFAULT_EXANIMATE)))
+    parser.add_argument('--game', type=Path, default=os.environ.get('EXANIMA_DIR'), required=not os.environ.get('EXANIMA_DIR'),
+                        help='the Exanima folder (or set EXANIMA_DIR)')
+    parser.add_argument('--exanimate', type=Path, default=os.environ.get('EXANIMATE_SERVICE'), required=not os.environ.get('EXANIMATE_SERVICE'),
+                        help='the ExaniMate service folder (or set EXANIMATE_SERVICE)')
     parser.add_argument('--reference', type=Path)
     parser.add_argument('--nodes', type=Path)
     args = parser.parse_args()
