@@ -17,6 +17,12 @@ optional = ["powers.cast", "powers.focus", "characters.read", "characters.awaren
             "world.lights", "ui.sound", "levels.serve", "assets.read", "effects.fire"]
 memory_mb = 64                    # the page merge (merge.lua) holds the icon sheet's mipmaps as pixels
 
+# The Energy page merged in an earlier session (scripts/merge.lua, cached with assets.write), served from the
+# game's start; a missing cache is skipped and this session's levels.serve takes over.
+[script.overrides]
+"Resource.rpk/pwr_energy.pwr" = "cache/pwr_energy.pwr"
+"Resource.rpk/thmnrgico1.rfi" = "cache/thmnrgico1.rfi"
+
 [script.modules]
 config = "scripts/config.lua"
 page = "scripts/page.lua"

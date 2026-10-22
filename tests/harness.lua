@@ -57,7 +57,11 @@ local function new(opts)
         caps["levels.serve"], caps["assets.read"] = true, true
         env.levels = { read = function(member, package) assert(package == "Resource.rpk") return "installed:" .. member end,
                        serve = function(member, bytes, package) s.served[member] = bytes return true end }
-        env.assets = { read = function(path) assert(path == "assets/energy-cells.rfi") return "cells" end }
+        s.cache = {}
+        env.assets = { read = function(path)
+                           if path:find("^cache/") then return s.cache[path] end
+                           assert(path == "assets/energy-cells.rfi") return "cells" end,
+                       write = function(path, bytes) assert(path:find("^cache/")) s.cache[path] = bytes s.writes = (s.writes or 0) + 1 return true end }
         env.tasks = { worker = function(module, input, fn)
             assert(module == "merge" and input.pwr == "installed:pwr_energy.pwr" and input.cells == "cells" and #input.nodes == 2)
             s.workers = (s.workers or 0) + 1
@@ -173,6 +177,7 @@ case("the Energy page is built from the installed one once and served", function
     s.handlers["runtime.phase"]({ phase = "menu" }) s.run(0.1)
     s.handlers["runtime.phase"]({ phase = "session" }) s.run(0.1)
     assert(s.workers == 1 and s.served["pwr_energy.pwr"] == "merged-pwr" and s.served["thmnrgico1.rfi"] == "merged-sheet")
+    assert(s.cache["cache/pwr_energy.pwr"] == "merged-pwr" and s.cache["cache/thmnrgico1.rfi"] == "merged-sheet" and s.writes == 2)
 end)
 
 case("without a way to read installed files the page is left alone, said once", function()

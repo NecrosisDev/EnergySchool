@@ -19,6 +19,8 @@ The Energy page ships with the game (Shock alone). The mod ships **no game data*
 `icon.py`). At the title menu it reads the installed page and icon sheet through the runtime, adds
 ours on a worker (`scripts/merge.lua`) and serves the result in their place, so Shock stays exactly as
 installed. The offline test checks that merge byte for byte against the same merge done in Python.
+It also keeps the result in its `cache/` folder (runtime 0.28.0-r48 `assets.write`), which the manifest's
+`[script.overrides]` serve from the next game start, before the game first reads either file.
 
 ## Needs
 

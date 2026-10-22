@@ -221,16 +221,23 @@ local function blade_light(on)
                                  glow = { size = g.size, color = { 1, 0.5, 0.15 } } })
 end
 
+-- The game's own small fire on the blade (effects.attach_fire, weapon targets since 0.28.0-r47); false
+-- when the runtime cannot, and the glow light stands in.
+local blade_burning = false
 local function blade_fx(on)
-    if effects and effects.attach_fire and api.has_capability("effects.fire") then
-        if on then
-            pcall(effects.attach_fire, "blade", "weapon:right", { size = 0.35 })
-        else
-            pcall(effects.remove_fire, "blade")
-        end
-        return true
+    if not (effects and effects.attach_fire and api.has_capability("effects.fire")) then
+        return false
     end
-    return false
+    if on then
+        local ok, attached = pcall(effects.attach_fire, "blade", "weapon:right", { size = 0.35 })
+        blade_burning = ok and attached == true
+        return blade_burning
+    end
+    if blade_burning then
+        pcall(effects.remove_fire, "blade")
+        blade_burning = false
+    end
+    return true
 end
 
 local function weapon_out(quiet)
@@ -240,7 +247,10 @@ local function weapon_out(quiet)
         weapon_timer = nil
     end
     tell_fire("fire.weapon", { seconds = 0 })
-    timers.after(0, function() if not blade_fx(false) then blade_light(false) end end)
+    timers.after(0, function()
+        blade_fx(false)
+        blade_light(false)
+    end)
     if not quiet then
         sound("out")
     end
@@ -252,7 +262,7 @@ local function weapon_tick()
     if now >= weapon_until then
         return weapon_out(false)
     end
-    if not (effects and effects.attach_fire and api.has_capability("effects.fire")) then
+    if not blade_burning then
         blade_light(true)
     end
     if now >= crackle_at then
@@ -337,6 +347,19 @@ local function serve_page()
         page_state = served and "served" or "failed"
         if not served then
             log.warn("the Energy page was not extended: the runtime refused to serve it")
+        end
+        -- Kept for the next game start too ([script.overrides] in the manifest), so the page and its icons
+        -- are there before the game first reads them, whenever that is. Rewritten only when they changed.
+        if assets.write then
+            for _, file in ipairs({ { "cache/pwr_energy.pwr", result.pwr }, { "cache/thmnrgico1.rfi", result.sheet } }) do
+                local ok, cached = pcall(assets.read, file[1])
+                if not (ok and cached == file[2]) then
+                    local written, why = assets.write(file[1], file[2])
+                    if not written then
+                        log.warn("the Energy page was not cached for the next start: " .. tostring(why))
+                    end
+                end
+            end
         end
     end)
 end
