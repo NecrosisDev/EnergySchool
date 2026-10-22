@@ -335,6 +335,19 @@ local function serve_page()
         log.warn("the Energy page was not extended: " .. tostring(why or (not ok and tree) or (not ok2 and sheet) or "an installed file is missing"))
         return
     end
+    -- What levels.read gave, checked before the worker: the page's tree starts with its magic and the sheet with
+    -- the texture's. In game a package read can come back changed (EMTK's package proxy serves .rpk reads by
+    -- path); say what arrived rather than fail inside the merge.
+    local function head(bytes)
+        return (bytes:sub(1, 8):gsub(".", function(c) return string.format("%02x", c:byte()) end))
+    end
+    if #tree < 0x38 or string.unpack("<I4", tree) ~= 0xAFCE01CE or #sheet < 32 or string.unpack("<I4", sheet) ~= 0x1D2D3DC6 then
+        page_state = "failed"
+        log.warn(string.format("the Energy page was not extended: levels.read gave pwr_energy.pwr %d bytes (%s) and "
+            .. "thmnrgico1.rfi %d bytes (%s); the installed files are 2351 bytes (ce01ceaf00cd01fe) and 591795 (c63d2d1d00020000)",
+            #tree, head(tree), #sheet, head(sheet)))
+        return
+    end
     page_state = "building"
     tasks.worker("merge", { pwr = tree, sheet = sheet, cells = cells, nodes = require("page") }, function(result, err)
         if not result then

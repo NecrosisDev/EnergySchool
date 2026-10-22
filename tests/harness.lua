@@ -55,7 +55,10 @@ local function new(opts)
     s.served = {}
     if opts.page then
         caps["levels.serve"], caps["assets.read"] = true, true
-        env.levels = { read = function(member, package) assert(package == "Resource.rpk") return "installed:" .. member end,
+        local installed = { ["pwr_energy.pwr"] = string.pack("<I4", 0xAFCE01CE) .. string.rep("p", 0x40),
+                            ["thmnrgico1.rfi"] = string.pack("<I4", 0x1D2D3DC6) .. string.rep("r", 0x40) }
+        if opts.garbled then installed["pwr_energy.pwr"] = string.rep("x", 600) end
+        env.levels = { read = function(member, package) assert(package == "Resource.rpk") return installed[member] end,
                        serve = function(member, bytes, package) s.served[member] = bytes return true end }
         s.cache = {}
         env.assets = { read = function(path)
@@ -63,7 +66,7 @@ local function new(opts)
                            assert(path == "assets/energy-cells.rfi") return "cells" end,
                        write = function(path, bytes) assert(path:find("^cache/")) s.cache[path] = bytes s.writes = (s.writes or 0) + 1 return true end }
         env.tasks = { worker = function(module, input, fn)
-            assert(module == "merge" and input.pwr == "installed:pwr_energy.pwr" and input.cells == "cells" and #input.nodes == 2)
+            assert(module == "merge" and input.pwr:sub(1, 4) == string.pack("<I4", 0xAFCE01CE) and input.cells == "cells" and #input.nodes == 2)
             s.workers = (s.workers or 0) + 1
             fn({ pwr = "merged-pwr", sheet = "merged-sheet" }) return 1 end }
     end
@@ -178,6 +181,13 @@ case("the Energy page is built from the installed one once and served", function
     s.handlers["runtime.phase"]({ phase = "session" }) s.run(0.1)
     assert(s.workers == 1 and s.served["pwr_energy.pwr"] == "merged-pwr" and s.served["thmnrgico1.rfi"] == "merged-sheet")
     assert(s.cache["cache/pwr_energy.pwr"] == "merged-pwr" and s.cache["cache/thmnrgico1.rfi"] == "merged-sheet" and s.writes == 2)
+end)
+
+case("garbled installed bytes are reported with what arrived, and nothing is merged", function()
+    local s = new{ page = true, garbled = true }
+    s.handlers["runtime.phase"]({ phase = "menu" }) s.run(0.1)
+    local said = false for _, l in ipairs(s.logs) do said = said or l:find("600 bytes %(7878787878787878%)") ~= nil end
+    assert(said and not s.workers and next(s.served) == nil)
 end)
 
 case("without a way to read installed files the page is left alone, said once", function()
