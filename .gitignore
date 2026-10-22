@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .claude/
 /dist/
+
+# Kept on disk, not published: development notes, tests and tools that do not build the mod
+/test_energy.py
+/tests/
