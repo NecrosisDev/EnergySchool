@@ -14,15 +14,18 @@ Light (blinding, Searing Beacon) and Body (Stone Skin, Might, ...) are untouched
 
 ## How it fits the game
 
-The Energy page ships with the game (Shock alone). `build.py` reads the installed `pwr_energy.pwr`
-and `thmnrgico1.rfi` and writes copies with the two powers and their icons added (`icon.py` paints
-them; Shock's node and icon are kept as installed). Those two files replace the game's in
-`assets/packages/Resource`, so this build carries the install's Shock entry and is for this install,
-not for publishing.
+The Energy page ships with the game (Shock alone). The mod ships **no game data**: only its own nodes
+(`scripts/page.lua`) and a sheet with its own two icon cells (`assets/energy-cells.rfi`, painted by
+`icon.py`). At the title menu it reads the installed page and icon sheet through the runtime, adds
+ours on a worker (`scripts/merge.lua`) and serves the result in their place, so Shock stays exactly as
+installed. The offline test checks that merge byte for byte against the same merge done in Python.
 
 ## Needs
 
-- The Exanima Lua Runtime with **Energy casts the game does not know handed to `power.cast`**
+- The Exanima Lua Runtime with `levels.read` (request 9 in `E:\Fire\RUNTIME-REQUESTS.md`), so the
+  page can be built at load. Without it the Energy page stays as installed and the powers cannot be
+  learnt.
+- The runtime with **Energy casts the game does not know handed to `power.cast`**
   (request 8 in `E:\Fire\RUNTIME-REQUESTS.md`). Without it the game plays its fail sound and nothing
   happens.
 - Optional, from the same file: the fire jet (4) and blade flames (3) replace the stand-in lights;
@@ -31,8 +34,8 @@ not for publishing.
 ## Build and check
 
 ```
-python -X utf8 -B test_energy.py   # offline: the addon against a stubbed runtime
-python -X utf8 -B build.py         # dist/mods/com.necrosis.energy-school (reads the install)
+python -X utf8 -B test_energy.py   # offline: the addon against a stubbed runtime, and the page merge
+python -X utf8 -B build.py         # dist/mods/com.necrosis.energy-school (reads only the sheet's format)
 ```
 
 **Status:** offline only. Nothing here has run in the game.

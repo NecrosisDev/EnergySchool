@@ -301,8 +301,51 @@ else
     log.info("Fire Breath and Flaming Weapon cannot be cast: this runtime has no powers.cast")
 end
 
+-- The Energy page --------------------------------------------------------------------------------------
+-- Built from the installed page at load time (merge.lua on a worker) and served in its place, so the
+-- mod ships only its own nodes and cells. Once per runtime load: a serve lasts until the addon unloads.
+
+local page_state = nil   -- nil, "building", "served" or "failed"
+
+local function serve_page()
+    if page_state then
+        return
+    end
+    if not (levels and levels.read and levels.serve and assets and assets.read and tasks and tasks.worker
+            and api.has_capability("levels.serve") and api.has_capability("assets.read")) then
+        page_state = "failed"
+        log.info("the Energy page cannot be extended: this runtime cannot read installed files (levels.read, RUNTIME-REQUESTS.md)")
+        return
+    end
+    local ok, tree = pcall(levels.read, "pwr_energy.pwr", "Resource.rpk")
+    local ok2, sheet = pcall(levels.read, "thmnrgico1.rfi", "Resource.rpk")
+    local cells, why = assets.read("assets/energy-cells.rfi")
+    if not (ok and tree and ok2 and sheet and cells) then
+        page_state = "failed"
+        log.warn("the Energy page was not extended: " .. tostring(why or (not ok and tree) or (not ok2 and sheet) or "an installed file is missing"))
+        return
+    end
+    page_state = "building"
+    tasks.worker("merge", { pwr = tree, sheet = sheet, cells = cells, nodes = require("page") }, function(result, err)
+        if not result then
+            page_state = "failed"
+            log.warn("the Energy page was not extended: " .. tostring(err))
+            return
+        end
+        local served = levels.serve("pwr_energy.pwr", result.pwr, "Resource.rpk")
+            and levels.serve("thmnrgico1.rfi", result.sheet, "Resource.rpk")
+        page_state = served and "served" or "failed"
+        if not served then
+            log.warn("the Energy page was not extended: the runtime refused to serve it")
+        end
+    end)
+end
+
 -- A level change or the menu puts the weapon out with everything else that burns.
-events.on("runtime.phase", function()
+events.on("runtime.phase", function(event)
+    if event.phase ~= "loading" then
+        timers.after(0, serve_page)
+    end
     if weapon_timer or weapon_until > 0 then
         weapon_out(true)
     end

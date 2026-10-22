@@ -10,10 +10,14 @@ requires = ["events.lifecycle", "timers"]
 # powers.cast must hand Energy casts the game does not know to Lua (requested, RUNTIME-REQUESTS.md);
 # powers.focus pays for them; characters.read and characters.awareness aim Fire Breath; inventory.read
 # checks a weapon is in hand; world.lights the gout's flash and the blade's glow; ui.sound the fire.
-# effects.fire (the fire jet and flames on the blade) is requested; unknown optional names are ignored
+# levels.serve and assets.read build the Energy page from the installed one (with the requested
+# levels.read); effects.fire (the fire jet and flames on the blade) is requested; unknown optional names are ignored
 # until a runtime has them. Burning itself is the Fire mod's (com.necrosis.fire), reached by addons.send.
 optional = ["powers.cast", "powers.focus", "characters.read", "characters.awareness", "inventory.read",
-            "world.lights", "ui.sound", "effects.fire"]
+            "world.lights", "ui.sound", "levels.serve", "assets.read", "effects.fire"]
+memory_mb = 64                    # the page merge (merge.lua) holds the icon sheet's mipmaps as pixels
 
 [script.modules]
 config = "scripts/config.lua"
+page = "scripts/page.lua"
+merge = "scripts/merge.lua"

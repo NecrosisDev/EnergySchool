@@ -52,6 +52,17 @@ local function new(opts)
                         remove_fire = function(name) s.fx[name] = nil return true end,
                         spawn_fire_jet = function(spec) s.jet = spec return true end }
     end
+    s.served = {}
+    if opts.page then
+        caps["levels.serve"], caps["assets.read"] = true, true
+        env.levels = { read = function(member, package) assert(package == "Resource.rpk") return "installed:" .. member end,
+                       serve = function(member, bytes, package) s.served[member] = bytes return true end }
+        env.assets = { read = function(path) assert(path == "assets/energy-cells.rfi") return "cells" end }
+        env.tasks = { worker = function(module, input, fn)
+            assert(module == "merge" and input.pwr == "installed:pwr_energy.pwr" and input.cells == "cells" and #input.nodes == 2)
+            s.workers = (s.workers or 0) + 1
+            fn({ pwr = "merged-pwr", sheet = "merged-sheet" }) return 1 end }
+    end
     local loaded = {}
     env.require = function(name)
         if loaded[name] == nil then
@@ -155,6 +166,20 @@ case("leaving the level puts the weapon out quietly", function()
     local sounds = #s.sounds
     s.handlers["runtime.phase"]({ phase = "loading" }) s.run(0.2)
     assert(s.last("fire.weapon").seconds == 0 and #s.sounds == sounds)
+end)
+
+case("the Energy page is built from the installed one once and served", function()
+    local s = new{ page = true }
+    s.handlers["runtime.phase"]({ phase = "menu" }) s.run(0.1)
+    s.handlers["runtime.phase"]({ phase = "session" }) s.run(0.1)
+    assert(s.workers == 1 and s.served["pwr_energy.pwr"] == "merged-pwr" and s.served["thmnrgico1.rfi"] == "merged-sheet")
+end)
+
+case("without a way to read installed files the page is left alone, said once", function()
+    local s = new()
+    s.handlers["runtime.phase"]({ phase = "menu" }) s.run(0.1) s.handlers["runtime.phase"]({ phase = "session" }) s.run(0.1)
+    local n = 0 for _, l in ipairs(s.logs) do if l:find("levels.read") then n = n + 1 end end
+    assert(n == 1 and next(s.served) == nil)
 end)
 
 print(passed .. " passed")
