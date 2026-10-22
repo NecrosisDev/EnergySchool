@@ -30,8 +30,9 @@ It also keeps the result in its `cache/` folder (runtime 0.28.0-r48 `assets.writ
 - The runtime with **Energy casts the game does not know handed to `power.cast`**
   (request 8 in `E:\Fire\RUNTIME-REQUESTS.md`). Without it the game plays its fail sound and nothing
   happens.
-- Optional, from the same file: the fire jet (4) and blade flames (3) replace the stand-in lights;
-  `facing` (5) aims the breath where you face instead of at the nearest foe fighting you.
+- Fire Breath aims where you face (runtime 0.28.0-r51 `facing`); on an older runtime, at the nearest
+  foe fighting you. The visible fire jet (request 4) is still open: until then a short orange flash
+  stands in. The blade burns with the game's own fire (`attach_fire` on the weapon).
 
 ## Build and check
 
